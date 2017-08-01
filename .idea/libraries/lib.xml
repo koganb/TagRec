@@ -1,0 +1,28 @@
+<component name="libraryTable">
+  <library name="lib">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/lib/slf4j-api-1.7.6.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/Jama-1.0.3.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/opencsv-2.3.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/solr-solrj-4.10.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/wstx-asl-3.2.7.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/json-simple-1.1.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/mallet-deps.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/mysql-connector-java-5.1.36-bin.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/commons-io-2.3.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/zookeeper-3.4.6.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/javaml-0.1.5.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/mallet.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/noggit-0.5.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/httpclient-4.3.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/httpmime-4.3.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/httpcore-4.3.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/commons-logging-1.2.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/commons-lang3-3.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/vecmath-1.5.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/guava-14.0-rc1.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
