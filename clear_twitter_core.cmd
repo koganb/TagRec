@@ -1,0 +1,1 @@
+del /F /Q C:\Courses\TagRec\data\results\twitter_core\general\* & del /F /Q C:\Courses\TagRec\data\metrics\twitter_core\general\*

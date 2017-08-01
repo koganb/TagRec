@@ -1,0 +1,26 @@
+package engine;
+
+public enum Algorithm {
+	MP,
+	BLL,
+	BLLac,
+	BLLacMPr,
+	BLLcoll,
+	MPu,
+	MPr,
+	MPur,
+	THREEL,
+	THREELT,
+	THREELTMPr,
+	THREELcoll,
+	
+	RESOURCEMP,
+	RESOURCECF,	
+	RESOURCETAGCF,
+	RESOURCETAGCB,
+	
+	USERMP,
+	USERCF,
+	USERTAGCF,
+	USERTAGCB
+}
