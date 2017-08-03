@@ -37,9 +37,13 @@ import org.apache.commons.lang3.StringUtils;
 
 import common.Bookmark;
 import file.stemming.EnglishStemmer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class BookmarkReader {
-	
+	private final Logger logger = LoggerFactory.getLogger(BookmarkReader.class);
+
+
 	private final int countLimit;
 	private List<Bookmark> userLines;
 	private List<Bookmark> testLines;
@@ -99,7 +103,12 @@ public class BookmarkReader {
 				filePath = path + filename;
 			}
 			//FileReader reader = new FileReader(new File(filePath));
-			InputStreamReader reader = new InputStreamReader(new FileInputStream(new File(filePath)), "UTF8");
+			File inputFile = new File(filePath);
+
+			logger.info("Reading input file: {}", inputFile.getAbsolutePath());
+
+
+			InputStreamReader reader = new InputStreamReader(new FileInputStream(inputFile), "UTF8");
 			BufferedReader br = new BufferedReader(reader);
 			List<String> categories = new ArrayList<String>(), tags = new ArrayList<String>();
 			Bookmark userData = null;

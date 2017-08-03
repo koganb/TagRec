@@ -41,8 +41,12 @@ import common.DoubleMapComparator;
 import common.PredictionData;
 import common.Utilities;
 import file.postprocessing.CatDescFiltering;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class PredictionFileReader {
+
+	private final Logger logger = LoggerFactory.getLogger(PredictionFileReader.class);
 
 	private List<PredictionData> predictions;
 	private String filename;
@@ -53,11 +57,15 @@ public class PredictionFileReader {
 		this.predictionCount = 0;
 	}
 	
-	public boolean readFile(String filename, int k, BookmarkReader wikiReader, Integer minBookmarks, Integer maxBookmarks, Integer minResBookmarks, Integer maxResBookmarks, CatDescFiltering categorizer) {
+	public boolean readFile(String filename, int k,  BookmarkReader wikiReader, Integer minBookmarks, Integer maxBookmarks, Integer minResBookmarks, Integer maxResBookmarks, CatDescFiltering categorizer) {
 		try {
 			this.filename = filename;
 			//FileReader reader = new FileReader(new File("./data/results/" + filename + ".txt"));
-			InputStreamReader reader = new InputStreamReader(new FileInputStream(new File("./data/results/" + filename + ".txt")), "UTF8");
+			File inputFile = new File("./data/results/" + filename + ".txt");
+
+            logger.info("Reading prediction file: {}", inputFile.getAbsolutePath());
+
+			InputStreamReader reader = new InputStreamReader(new FileInputStream(inputFile), "UTF8");
 			BufferedReader br = new BufferedReader(reader);
 			String line = null;
 			
@@ -68,7 +76,7 @@ public class PredictionFileReader {
 				try {
 					userID = Integer.parseInt(parts[0]);
 				} catch (Exception e) {
-					// string id - do nothing
+					throw new RuntimeException(e);
 				}
 				int resID = -1;
 				if (parts.length > 1) {
