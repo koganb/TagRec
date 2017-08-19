@@ -269,8 +269,11 @@ public class Pipeline {
         } else if (op.equals("hashtag_cb_gen")) {
             startSocialRecommendation(sampleDir, samplePath, sampleNetwork, "hybrid", 1.723, null, 1.269, null,
                     solrServerNameWithPort, "general");
-        } else if (op.equals("hashtag_cb_gen_weighted")) {
-            startSocialRecommendation(sampleDir, samplePath, sampleNetwork, "hybrid_weighted", 1.723, null, 1.269, null,
+        } else if (op.equals("hashtag_cb_gen_fol_weighted")) {
+            startSocialRecommendation(sampleDir, samplePath, sampleNetwork, "hybrid_fol_weighted", 1.723, null, 1.269, null,
+                    solrServerNameWithPort, "general");
+        } else if (op.equals("hashtag_cb_gen_fr_weighted")) {
+            startSocialRecommendation(sampleDir, samplePath, sampleNetwork, "hybrid_fr_weighted", 1.723, null, 1.269, null,
                     solrServerNameWithPort, "general");
         } else {
             System.out.println("Unknown operation");
@@ -394,7 +397,13 @@ public class Pipeline {
                 calculator = new HashtagRecommendationEngine(sampleDir, sampleName, networkFilename, TRAIN_SIZE,
                         TEST_SIZE, dIndividual, lambdaIndividual);
                 calculator.setSocialStrengthCalculator(socialStrengthCalculator);
-            } else if ("hybrid_weighted".equals(a)) {
+            } else if ("hybrid_fol_weighted".equals(a)) {
+                String followerAndFriendsFile = "./data/csv/" + sampleDir + "/followers_friends_meta_data.csv";
+                SocialStrengthCalculator socialStrengthCalculator = new SocialStrengthCalculator(followerAndFriendsFile);
+                calculator = new HashtagRecommendationEngine(sampleDir, sampleName, networkFilename, TRAIN_SIZE,
+                        TEST_SIZE, dIndividual, lambdaIndividual);
+                calculator.setSocialStrengthCalculator(socialStrengthCalculator);
+            } else if ("hybrid_fr_weighted".equals(a)) {
                 String followerAndFriendsFile = "./data/csv/" + sampleDir + "/followers_friends_meta_data.csv";
                 SocialStrengthCalculator socialStrengthCalculator = new SocialStrengthCalculator(followerAndFriendsFile);
                 calculator = new HashtagRecommendationEngine(sampleDir, sampleName, networkFilename, TRAIN_SIZE,
