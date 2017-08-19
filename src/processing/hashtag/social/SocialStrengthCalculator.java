@@ -1,14 +1,18 @@
 package processing.hashtag.social;
 
+import cc.mallet.util.FileUtils;
+
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
-
-import cc.mallet.util.FileUtils;
+import java.util.Map;
+import java.util.Optional;
 
 public class SocialStrengthCalculator {
 
@@ -16,13 +20,34 @@ public class SocialStrengthCalculator {
     private HashMap<String, HashMap<String, ArrayList<Long>>> mapUserRetweetTimestamps;
     private HashMap<String, HashMap<String, ArrayList<Long>>> mapUserReplyTimestamps;
 
+
+    private Map<String, Double> followerNormCount = new HashMap<>();
+    private Map<String, Double> friendsNormCount = new HashMap<>();
+
     public SocialStrengthCalculator(String mentionFilename, String retweetFilename, String replyFilename) {
         populateUserRelationMap(mentionFilename, retweetFilename, replyFilename);
     }
-    
+
+    public SocialStrengthCalculator(String followerNormCountFile) {
+
+        //"simple" csv values, no need for csvReader
+        try (BufferedReader br = new BufferedReader(new FileReader(followerNormCountFile))) {
+            br.readLine(); //read header line
+
+            br.lines().map(s -> s.split(",")).forEach(arr -> {
+                friendsNormCount.put(arr[0], Double.valueOf(arr[3]));
+                followerNormCount.put(arr[0], Double.valueOf(arr[4]));
+            });
+
+
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     /**
      * Populate mention list for users.
-     * 
+     *
      * @param mentionFilename
      *            the filename of the mention list of users
      **/
@@ -46,7 +71,7 @@ public class SocialStrengthCalculator {
 
     /**
      * Populate retweet list of users.
-     * 
+     *
      * @param retweetFilename
      *            the filename of the retweet list of users
      */
@@ -70,7 +95,7 @@ public class SocialStrengthCalculator {
 
     /**
      * Populate reply list of users.
-     * 
+     *
      * @param replyFilename
      *            the filename of the reply list of users
      */
@@ -94,7 +119,7 @@ public class SocialStrengthCalculator {
 
     /**
      * Populate all the list.
-     * 
+     *
      * @param mentionFilename
      * @param retweetFilename
      * @param replyFilename
@@ -109,7 +134,7 @@ public class SocialStrengthCalculator {
 
     /**
      * Get relation item list from the filename.
-     * 
+     *
      * @param filename
      * @return return the list of {@link RelationItem}
      **/
@@ -160,60 +185,67 @@ public class SocialStrengthCalculator {
     }
 
     /** Get the tag weight based on the userId, friend and weightType.
-    * 
-    * @param userId
-    * @param friend
-    * @param weightType
-    * @return {@link Double} the weight which id independent of the tag and
-    *         just depend on the relation strength between 2 users.
-    */
+     *
+     * @param userId
+     * @param friend
+     * @param weightType
+     * @return {@link Double} the weight which id independent of the tag and
+     *         just depend on the relation strength between 2 users.
+     */
     public double getTagWeight(String userId, String friend, String weightType) {
-       double weight = 0;
-       if ("retweet".equals(weightType)) {
-           if (mapUserRetweetTimestamps.get(userId) != null) {
-               System.out.println("user timestamp not null >> ");
-               if (mapUserRetweetTimestamps.get(userId).get(friend) != null) {
-                   weight = mapUserRetweetTimestamps.get(userId).get(friend).size();
-                   System.out.println("weight not zero >> " + weight);
-               } else {
-                   weight = 0;
-               }
-           }
-       } else if ("mention".equals(weightType)) {
-           if (mapUserMentionTimestamps.get(userId) != null) {
-               if (mapUserMentionTimestamps.get(userId).get(friend) != null) {
-                   weight = mapUserMentionTimestamps.get(userId).get(friend).size();
-                   System.out.println("weight not zero >> " + weight);
-               } else {
-                   weight = 0;
-               }
-           }
-       } else if ("reply".equals(weightType)) {
-           if (mapUserReplyTimestamps.get(userId) != null) {
-               if (mapUserReplyTimestamps.get(userId).get(friend) != null) {
-                   weight = mapUserReplyTimestamps.get(userId).get(friend).size();
-               } else {
-                   weight = 0;
-               }
-           }
-       } else if ("hybrid".equals(weightType)) {
-           if (mapUserReplyTimestamps.get(userId) != null) {
-               if (mapUserReplyTimestamps.get(userId).get(friend) != null) {
-                   weight += mapUserReplyTimestamps.get(userId).size();
-               }
-           }
-           if (mapUserMentionTimestamps.get(userId) != null) {
-               if (mapUserMentionTimestamps.get(userId).get(friend) != null) {
-                   weight += mapUserMentionTimestamps.get(userId).size();
-               }
-           }
-           if (mapUserRetweetTimestamps.get(userId) != null) {
-               if (mapUserRetweetTimestamps.get(userId).get(friend) != null) {
-                   weight += mapUserRetweetTimestamps.get(userId).size();
-               }
-           }
-       }
-       return weight;
-   }
+        double weight = 0;
+        if ("follower".equals(weightType)) {
+            return Optional.ofNullable(followerNormCount.get(friend)).orElse(0.0d);
+        }
+        if ("friend".equals(weightType)) {
+            return Optional.ofNullable(followerNormCount.get(friend)).orElse(0.0d);
+        }
+
+        if ("retweet".equals(weightType)) {
+            if (mapUserRetweetTimestamps.get(userId) != null) {
+                System.out.println("user timestamp not null >> ");
+                if (mapUserRetweetTimestamps.get(userId).get(friend) != null) {
+                    weight = mapUserRetweetTimestamps.get(userId).get(friend).size();
+                    System.out.println("weight not zero >> " + weight);
+                } else {
+                    weight = 0;
+                }
+            }
+        } else if ("mention".equals(weightType)) {
+            if (mapUserMentionTimestamps.get(userId) != null) {
+                if (mapUserMentionTimestamps.get(userId).get(friend) != null) {
+                    weight = mapUserMentionTimestamps.get(userId).get(friend).size();
+                    System.out.println("weight not zero >> " + weight);
+                } else {
+                    weight = 0;
+                }
+            }
+        } else if ("reply".equals(weightType)) {
+            if (mapUserReplyTimestamps.get(userId) != null) {
+                if (mapUserReplyTimestamps.get(userId).get(friend) != null) {
+                    weight = mapUserReplyTimestamps.get(userId).get(friend).size();
+                } else {
+                    weight = 0;
+                }
+            }
+        } else if ("hybrid".equals(weightType)) {
+            if (mapUserReplyTimestamps.get(userId) != null) {
+                if (mapUserReplyTimestamps.get(userId).get(friend) != null) {
+                    weight += mapUserReplyTimestamps.get(userId).size();
+                }
+            }
+            if (mapUserMentionTimestamps.get(userId) != null) {
+                if (mapUserMentionTimestamps.get(userId).get(friend) != null) {
+                    weight += mapUserMentionTimestamps.get(userId).size();
+                }
+            }
+            if (mapUserRetweetTimestamps.get(userId) != null) {
+                if (mapUserRetweetTimestamps.get(userId).get(friend) != null) {
+                    weight += mapUserRetweetTimestamps.get(userId).size();
+                }
+            }
+        }
+        return weight;
+    }
 
 }

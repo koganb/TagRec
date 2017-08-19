@@ -1,13 +1,6 @@
 package processing.hashtag;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import com.google.common.primitives.Ints;
-
 import common.Bookmark;
 import common.MapUtil;
 import common.Utilities;
@@ -15,14 +8,14 @@ import file.BookmarkReader;
 import file.PredictionFileWriter;
 import processing.BLLCalculator;
 import processing.hashtag.baseline.ContentPersonalTemporalCalculator;
-import processing.hashtag.social.SocialBLLCalculator;
-import processing.hashtag.social.SocialFrequencyCalculator;
-import processing.hashtag.social.SocialHybridCalculator;
-import processing.hashtag.social.SocialInitEngine;
-import processing.hashtag.social.SocialLinkWeightCalculator;
-import processing.hashtag.social.SocialRecencyRecommender;
-import processing.hashtag.social.SocialStrengthCalculator;
+import processing.hashtag.social.*;
 import processing.hashtag.solr.SolrHashtagCalculator;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author spujari
@@ -50,9 +43,9 @@ public class HashtagRecommendationEngine {
 	private double eta_l;
 	private SocialStrengthCalculator socialStrengthCalculator;
 
-    /**
+	/**
 	 * Base constructor.
-	 * 
+	 *
 	 * @param sampleDir
 	 * @param userTweetFilename
 	 * @param networkFilename
@@ -62,7 +55,7 @@ public class HashtagRecommendationEngine {
 	 * @param lambdaIndividual
 	 */
 	public HashtagRecommendationEngine(String sampleDir, String userTweetFilename, String networkFilename, int trainSize,
-			int testSize, double dIndividual, Double lambdaIndividual) {
+									   int testSize, double dIndividual, Double lambdaIndividual) {
 		this.filename = userTweetFilename;
 		this.sampleDir = sampleDir;
 		this.trainSize = trainSize;
@@ -70,9 +63,9 @@ public class HashtagRecommendationEngine {
 		initNetwork(networkFilename);
 		initBLLAndFreqMaps(trainSize, dIndividual, lambdaIndividual);
 	}
-	
+
 	/**
-	 * 
+	 *
 	 * @param sampleDir
 	 * @param userTweetFilename
 	 * @param networkFilename
@@ -85,16 +78,16 @@ public class HashtagRecommendationEngine {
 	 * @param lambdaIndividual
 	 **/
 	public HashtagRecommendationEngine(String sampleDir, String userTweetFilename, String networkFilename, String mentionFilename,
-			String retweetFilename, String replyFilename, int trainSize, int testSize, double dIndividual,
-			Double lambdaIndividual) {
+									   String retweetFilename, String replyFilename, int trainSize, int testSize, double dIndividual,
+									   Double lambdaIndividual) {
 		this(sampleDir, userTweetFilename, networkFilename, trainSize, testSize, dIndividual, lambdaIndividual);
 		this.mentionFilename = mentionFilename;
 		this.retweetFilename = retweetFilename;
 		this.replyFilename = replyFilename;
 	}
-	
+
 	/**
-	 * 
+	 *
 	 * @param sampleDir
 	 * @param userTweetFilename
 	 * @param networkFilename
@@ -106,7 +99,7 @@ public class HashtagRecommendationEngine {
 	 * @param lambdaIndividual
 	 */
 	public HashtagRecommendationEngine(String sampleDir, String userTweetFilename, String networkFilename, String solrUrl, String solrCore,
-			int trainSize, int testSize, double dIndividual, Double lambdaIndividual){
+									   int trainSize, int testSize, double dIndividual, Double lambdaIndividual) {
 		this(sampleDir, userTweetFilename, networkFilename, trainSize, testSize, dIndividual, lambdaIndividual);
 		this.solrCore = solrCore;
 		this.solrUrl = solrUrl;
@@ -114,7 +107,7 @@ public class HashtagRecommendationEngine {
 
 	/**
 	 * Init Network.
-	 * 
+	 *
 	 **/
 	private void initNetwork(String networkFilename) {
 		this.network = SocialInitEngine.getNetwork(networkFilename, SocialInitEngine.getNameIdMap(idNameMap));
@@ -143,10 +136,10 @@ public class HashtagRecommendationEngine {
 		this.resultMapPersonalFreqAllUsers = Utilities
 				.getNormalizedMaps(this.reader.getBookmarks().subList(0, trainSize), false);
 	}
-	
+
 	/**
 	 * Get User Tag times
-	 * 
+	 *
 	 * @return Hashmap of user-user timestamps
 	 */
 	public HashMap<String, HashMap<Integer, ArrayList<Long>>> getUserTagTimes() {
@@ -155,7 +148,7 @@ public class HashtagRecommendationEngine {
 
 	/**
 	 * Get the underlying network.
-	 * 
+	 *
 	 * @return Network
 	 */
 	public HashMap<String, ArrayList<String>> getNetwork() {
@@ -164,7 +157,7 @@ public class HashtagRecommendationEngine {
 
 	/**
 	 * For all test data create the map of tags to the weight.
-	 * 
+	 *
 	 * @param beta
 	 * @param exponentSocial
 	 * @param algorithm
@@ -175,7 +168,7 @@ public class HashtagRecommendationEngine {
 	 *         assigned to them.
 	 */
 	private List<Map<Integer, Double>> calculateSocialTagScore(double beta, double exponentSocial, String algorithm,
-			boolean sort) {
+															   boolean sort) {
 		List<Map<Integer, Double>> results = new ArrayList<Map<Integer, Double>>();
 		if (algorithm.equals("social_top_per_temp")){
 			ContentPersonalTemporalCalculator contentPersTempCalculator = null;
@@ -193,12 +186,12 @@ public class HashtagRecommendationEngine {
 					Map<Integer, Double> map = new HashMap<Integer, Double>();
 					// compute score only if the text based similarity metric is available.
 					if(contentBasedValues.containsKey(data.getUserID())){
-					    map = contentPersTempCalculator.getSimilarityScoreVersion3(data.getUserID(), data.getTimestampAsLong(), true);
-					    //System.out.println("sorted map >>" + map);
-					    results.add(map);
+						map = contentPersTempCalculator.getSimilarityScoreVersion3(data.getUserID(), data.getTimestampAsLong(), true);
+						//System.out.println("sorted map >>" + map);
+						results.add(map);
 					}else{
-					    //System.out.println("user id not present ");
-					    results.add(null);
+						//System.out.println("user id not present ");
+						results.add(null);
 					}
 				}
 			}else{
@@ -212,7 +205,7 @@ public class HashtagRecommendationEngine {
 				Bookmark data = reader.getBookmarks().get(i);
 				Map<Integer, Double> map = new HashMap<Integer, Double>();
 				map = socialLinkWeightCalculator.getRankedTagListSocialLinkWeight(data.getUserID(), data.getTimestampAsLong(),
-							true);
+						true);
 				results.add(map);
 			}
 			return results;
@@ -228,10 +221,22 @@ public class HashtagRecommendationEngine {
 				} else if (algorithm.equals("hybrid")) {
 					map = new SocialHybridCalculator(userTagTimes, network, users, resultMapPersonalBLLAllUsers, resultMapPersonalFreqAllUsers)
 							.getRankedTagListSocialBLLHybrid(data.getUserID(), data.getTimestampAsLong(), beta, exponentSocial, sort, false);
+				} else if (algorithm.equals("hybrid_fol_weighted")) {
+					SocialHybridCalculator socialHybridCalculator = new SocialHybridCalculator(userTagTimes, network, users, resultMapPersonalBLLAllUsers, resultMapPersonalFreqAllUsers);
+					socialHybridCalculator.setSocialStrengthCalculator(socialStrengthCalculator);
+					socialHybridCalculator.setCalculatorWeightType("follower");
+					map = socialHybridCalculator
+							.getRankedTagListSocialBLLHybrid(data.getUserID(), data.getTimestampAsLong(), beta, exponentSocial, sort, true);
+				} else if (algorithm.equals("hybrid_fr_weighted")) {
+					SocialHybridCalculator socialHybridCalculator = new SocialHybridCalculator(userTagTimes, network, users, resultMapPersonalBLLAllUsers, resultMapPersonalFreqAllUsers);
+					socialHybridCalculator.setSocialStrengthCalculator(socialStrengthCalculator);
+					socialHybridCalculator.setCalculatorWeightType("friend");
+					map = socialHybridCalculator
+							.getRankedTagListSocialBLLHybrid(data.getUserID(), data.getTimestampAsLong(), beta, exponentSocial, sort, true);
 				} else if(algorithm.equals("hybrid_link")){
-				    SocialHybridCalculator socialHybridCalculator =  new SocialHybridCalculator(userTagTimes, network, users, resultMapPersonalBLLAllUsers, resultMapPersonalFreqAllUsers);
-				    socialHybridCalculator.setSocialStrengthCalculator(socialStrengthCalculator);
-				    map = socialHybridCalculator.getRankedTagListSocialBLLHybrid(data.getUserID(), data.getTimestampAsLong(), beta, exponentSocial, sort, true);
+					SocialHybridCalculator socialHybridCalculator = new SocialHybridCalculator(userTagTimes, network, users, resultMapPersonalBLLAllUsers, resultMapPersonalFreqAllUsers);
+					socialHybridCalculator.setSocialStrengthCalculator(socialStrengthCalculator);
+					map = socialHybridCalculator.getRankedTagListSocialBLLHybrid(data.getUserID(), data.getTimestampAsLong(), beta, exponentSocial, sort, true);
 				} else if (algorithm.equals("hybrid_freq")) {
 					map = new SocialHybridCalculator(userTagTimes, network, users, resultMapPersonalBLLAllUsers, resultMapPersonalFreqAllUsers)
 							.getRankedTagListSocialFrequencyHybrid(data.getUserID(), data.getTimestampAsLong(), beta);
@@ -240,8 +245,7 @@ public class HashtagRecommendationEngine {
 							.getRankedTagListSocialRecency(data.getUserID(), data.getTimestampAsLong(), true);
 				}
 
-				
-				
+
 				results.add(map);
 			}
 			return results;
@@ -250,7 +254,7 @@ public class HashtagRecommendationEngine {
 
 	/**
 	 * The entrance point for creating the result for all the test set.
-	 * 
+	 *
 	 * @param betaBLL
 	 *            weight for the BLL score
 	 * @param betaCB
@@ -267,7 +271,7 @@ public class HashtagRecommendationEngine {
 	 *         recommendation for the test dataset.
 	 */
 	public BookmarkReader predictSample(double betaBLL, double betaCB, double dSocial, Double lambdaSocial,
-			String algorithm, Map<Integer, Map<Integer, Double>> contentBasedValues, String suffix) {
+										String algorithm, Map<Integer, Map<Integer, Double>> contentBasedValues, String suffix) {
 		List<Map<Integer, Double>> resultValues = null;
 		List<Map<Integer, Double>> actValues = null;
 		reader.setTestLines(reader.getBookmarks().subList(trainSize, reader.getBookmarks().size()));
@@ -318,7 +322,7 @@ public class HashtagRecommendationEngine {
 				if (resultMap != null && resultMap.keySet() != null) {
 					predictionValues.add(Ints.toArray(resultMap.keySet()));
 				}else{
-				    predictionValues.add(null);
+					predictionValues.add(null);
 				}
 			}
 		}
@@ -328,27 +332,27 @@ public class HashtagRecommendationEngine {
 		return reader;
 	}
 
-    public double getEta_h() {
-        return eta_h;
-    }
+	public double getEta_h() {
+		return eta_h;
+	}
 
-    public void setEta_h(double eta_h) {
-        this.eta_h = eta_h;
-    }
+	public void setEta_h(double eta_h) {
+		this.eta_h = eta_h;
+	}
 
-    public double getEta_l() {
-        return eta_l;
-    }
+	public double getEta_l() {
+		return eta_l;
+	}
 
-    public void setEta_l(double eta_l) {
-        this.eta_l = eta_l;
-    }
-    
-    public SocialStrengthCalculator getSocialStrengthCalculator() {
-        return socialStrengthCalculator;
-    }
+	public void setEta_l(double eta_l) {
+		this.eta_l = eta_l;
+	}
 
-    public void setSocialStrengthCalculator(SocialStrengthCalculator socialStrengthCalculator) {
-        this.socialStrengthCalculator = socialStrengthCalculator;
-    }
+	public SocialStrengthCalculator getSocialStrengthCalculator() {
+		return socialStrengthCalculator;
+	}
+
+	public void setSocialStrengthCalculator(SocialStrengthCalculator socialStrengthCalculator) {
+		this.socialStrengthCalculator = socialStrengthCalculator;
+	}
 }

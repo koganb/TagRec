@@ -20,6 +20,24 @@
 
 package test;
 
+import common.Bookmark;
+import common.CalculationType;
+import common.Features;
+import common.Utilities;
+import file.BookmarkReader;
+import file.BookmarkSplitter;
+import file.postprocessing.CatDescFiltering;
+import file.preprocessing.*;
+import itemrecommendations.*;
+import processing.*;
+import processing.analyzing.UserTagDistribution;
+import processing.hashtag.HashtagRecommendationEngine;
+import processing.hashtag.analysis.ProcessFrequencyRecency;
+import processing.hashtag.analysis.ProcessFrequencyRecencySocial;
+import processing.hashtag.social.SocialStrengthCalculator;
+import processing.hashtag.solr.CFSolrHashtagCalculator;
+import processing.hashtag.solr.SolrHashtagCalculator;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -30,57 +48,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import cc.mallet.topics.ParallelTopicModel;
-import cc.mallet.types.InstanceList;
-import common.Bookmark;
-import common.CalculationType;
-import common.Features;
-import common.Utilities;
-import engine.Algorithm;
-import engine.EngineInterface;
-import engine.EntityRecommenderEngine;
-import engine.EntityType;
-import engine.TagRecommenderEvalEngine;
-import file.BookmarkReader;
-import file.BookmarkSplitter;
-import file.postprocessing.CatDescFiltering;
-import file.preprocessing.BibsonomyProcessor;
-import file.preprocessing.CiteULikeProcessor;
-import file.preprocessing.LastFMProcessor;
-import file.preprocessing.MovielensProcessor;
-import file.preprocessing.PintsProcessor;
-import file.preprocessing.TensorProcessor;
-import itemrecommendations.CFResourceCalculator;
-import itemrecommendations.CIRTTCalculator;
-import itemrecommendations.HuangCalculator;
-import itemrecommendations.MPResourceCalculator;
-import itemrecommendations.SustainCalculator;
-import itemrecommendations.ZhengCalculator;
-import processing.BLLCalculator;
-import processing.CFTagRecommender;
-import processing.ContentBasedCalculator;
-import processing.FolkRankCalculator;
-import processing.GIRPTMCalculator;
-import processing.MPCalculator;
-import processing.MPurCalculator;
-import processing.MalletCalculator;
-import processing.MetricsCalculator;
-import processing.RecencyCalculator;
-import processing.ThreeLTCalculator;
-import processing.analyzing.UserTagDistribution;
-import processing.hashtag.HashtagRecommendationEngine;
-import processing.hashtag.analysis.ProcessFrequencyRecency;
-import processing.hashtag.analysis.ProcessFrequencyRecencySocial;
-import processing.hashtag.social.SocialStrengthCalculator;
-import processing.hashtag.solr.CFSolrHashtagCalculator;
-import processing.hashtag.solr.SolrHashtagCalculator;
-import processing.hashtag.solr.Tweet;
-
 public class Pipeline {
 
-    // are set automatically in code
-    private static int TRAIN_SIZE;
-    private static int TEST_SIZE;
     // set for postprocessing (number of bookmarks - null is nothing)
     private final static Integer MIN_USER_BOOKMARKS = null;
     private final static Integer MAX_USER_BOOKMARKS = null;
@@ -89,11 +58,14 @@ public class Pipeline {
     // set for categorizer/describer split (true is describer, false is
     // categorizer - null for nothing)
     private final static Boolean DESCRIBER = null;
-    // placeholder for the topic posfix
-    private static String TOPIC_NAME = null;
     // placeholder for the used dataset
     private final static String DATASET = "twitter";
     private final static String SUBDIR = "/researchers";
+    // are set automatically in code
+    private static int TRAIN_SIZE;
+    private static int TEST_SIZE;
+    // placeholder for the topic posfix
+    private static String TOPIC_NAME = null;
 
     public static void main(String[] args) {
         System.out.println(
@@ -110,7 +82,7 @@ public class Pipeline {
                         + "You should have received a copy of the GNU Affero General Public License\n"
                         + "along with this program.  If not, see <http://www.gnu.org/licenses/>.\n"
                         + "-----------------------------------------------------------------------------\n\n");
-        
+
         String dir = DATASET + "_core" + SUBDIR + "/";
         String path = dir + DATASET + "_sample";
         String networkFileName = "./data/csv/" + dir + "network.txt";
@@ -293,10 +265,13 @@ public class Pipeline {
                     null, null);
         } else if (op.equals("hashtag_cb_res")) {
             startSocialRecommendation(sampleDir, samplePath, sampleNetwork, "hybrid", 1.699, null, 1.242, null,
-            		solrServerNameWithPort, "researcher");
+                    solrServerNameWithPort, "researcher");
         } else if (op.equals("hashtag_cb_gen")) {
             startSocialRecommendation(sampleDir, samplePath, sampleNetwork, "hybrid", 1.723, null, 1.269, null,
-            		solrServerNameWithPort, "general");
+                    solrServerNameWithPort, "general");
+        } else if (op.equals("hashtag_cb_gen_weighted")) {
+            startSocialRecommendation(sampleDir, samplePath, sampleNetwork, "hybrid_weighted", 1.723, null, 1.269, null,
+                    solrServerNameWithPort, "general");
         } else {
             System.out.println("Unknown operation");
         }
@@ -338,7 +313,7 @@ public class Pipeline {
     }
 
     private static void startActCalculator(String sampleDir, String sampleName, int sampleCount, double dVal,
-            Double lambda, int betaUpperBound, boolean all, CalculationType type, boolean allMetrics) {
+                                           Double lambda, int betaUpperBound, boolean all, CalculationType type, boolean allMetrics) {
         getTrainTestSize(sampleName);
         List<Integer> betaValues = getBetaValues(betaUpperBound);
         String ac = type == CalculationType.USER_TO_RESOURCE ? "_ac" : "";
@@ -364,8 +339,8 @@ public class Pipeline {
     }
 
     private static void startSocialRecommendation(String sampleDir, String sampleName, String networkFilename,
-            String algo, double dIndividual, Double lambdaIndividual, double dSocial, Double lambdaSocial,
-            String solrUrl, String solrCore) {
+                                                  String algo, double dIndividual, Double lambdaIndividual, double dSocial, Double lambdaSocial,
+                                                  String solrUrl, String solrCore) {
         double betaBLL = 0.5;
         double betaCB = 0.3;
 
@@ -419,6 +394,12 @@ public class Pipeline {
                 calculator = new HashtagRecommendationEngine(sampleDir, sampleName, networkFilename, TRAIN_SIZE,
                         TEST_SIZE, dIndividual, lambdaIndividual);
                 calculator.setSocialStrengthCalculator(socialStrengthCalculator);
+            } else if ("hybrid_weighted".equals(a)) {
+                String followerAndFriendsFile = "./data/csv/" + sampleDir + "/followers_friends_meta_data.csv";
+                SocialStrengthCalculator socialStrengthCalculator = new SocialStrengthCalculator(followerAndFriendsFile);
+                calculator = new HashtagRecommendationEngine(sampleDir, sampleName, networkFilename, TRAIN_SIZE,
+                        TEST_SIZE, dIndividual, lambdaIndividual);
+                calculator.setSocialStrengthCalculator(socialStrengthCalculator);
             } else {
                 System.out.println("Social init ... ");
                 calculator = new HashtagRecommendationEngine(sampleDir, sampleName, networkFilename, TRAIN_SIZE,
@@ -456,14 +437,14 @@ public class Pipeline {
     }
 
     private static void startCfCbHashtagCalculator(String sampleDir, String sampleName, double beta, String solrUrl,
-            String solrCore) {
+                                                   String solrCore) {
         getTrainTestSize(sampleName);
         CFSolrHashtagCalculator.predictSample(sampleDir, sampleName, TRAIN_SIZE, beta, solrUrl, solrCore);
         writeMetrics(sampleDir, sampleName, "cf_cb_" + beta, 1, 10, null, null, null);
     }
 
     private static void analysisSocial(String sampleDir, String sampleName, String networkFilename, String type,
-            Integer granularity) {
+                                       Integer granularity) {
         getTrainTestSize(sampleName);
         HashtagRecommendationEngine calculator = new HashtagRecommendationEngine(sampleDir, sampleName, networkFilename,
                 TRAIN_SIZE, TEST_SIZE, 0.5, null);
@@ -491,7 +472,7 @@ public class Pipeline {
     }
 
     private static void startModelCalculator(String sampleDir, String sampleName, int sampleCount, int betaUpperBound,
-            boolean all) {
+                                             boolean all) {
         getTrainTestSize(sampleName);
         List<Integer> betaValues = getBetaValues(betaUpperBound);
         BookmarkReader reader = null;
@@ -515,7 +496,7 @@ public class Pipeline {
     }
 
     private static void startCfTagCalculator(String sampleDir, String sampleName, int sampleCount, int neighbors,
-            int betaUpperBound, boolean all) {
+                                             int betaUpperBound, boolean all) {
         getTrainTestSize(sampleName);
         List<Integer> betaValues = getBetaValues(betaUpperBound);
         BookmarkReader reader = null;
@@ -559,7 +540,7 @@ public class Pipeline {
     }
 
     private static void startLdaCalculator(String sampleDir, String sampleName, int topics, int sampleCount,
-            boolean all) {
+                                           boolean all) {
         getTrainTestSize(sampleName);
         BookmarkReader reader = null;
         for (int i = 1; i <= sampleCount; i++) {
@@ -569,7 +550,7 @@ public class Pipeline {
     }
 
     private static void start3LayersJavaCalculator(String sampleDir, String sampleName, String topicString, int size,
-            int dUpperBound, int betaUpperBound, boolean resBased, boolean tagBLL, boolean topicBLL) {
+                                                   int dUpperBound, int betaUpperBound, boolean resBased, boolean tagBLL, boolean topicBLL) {
         getTrainTestSize(sampleName);
         List<Integer> dValues = getBetaValues(dUpperBound);
         List<Integer> betaValues = getBetaValues(betaUpperBound);
@@ -611,7 +592,7 @@ public class Pipeline {
     // Helpers
     // -----------------------------------------------------------------------------------------------------------------------------------------------------------
     private static void createLdaSamples(String sampleName, int size, int topics, boolean tagrec,
-            boolean personalizedTopicCreation) {
+                                         boolean personalizedTopicCreation) {
         getTrainTestSize(sampleName);
         for (int i = 1; i <= size; i++) {
             MalletCalculator.createSample(sampleName, (short) topics, tagrec, TRAIN_SIZE, personalizedTopicCreation);
@@ -631,7 +612,7 @@ public class Pipeline {
     }
 
     private static void writeMetrics(String sampleDir, String sampleName, String prefix, int sampleCount, int k,
-            String posfix, BookmarkReader reader, Integer trainSize) {
+                                     String posfix, BookmarkReader reader, Integer trainSize) {
         CatDescFiltering filter = null;
         if (DESCRIBER != null) {
             filter = CatDescFiltering.instantiate(sampleName, TRAIN_SIZE);
@@ -757,13 +738,13 @@ public class Pipeline {
     }
 
     /**
-     * 
+     *
      * Passing the trainSize means that MyMediaLite files will be evaluated
-     * 
-     * 
+     *
+     *
      */
     private static void evaluate(String sampleDir, String sampleName, String prefix, String postfix, boolean calcTags,
-            boolean tensor, BookmarkReader reader) {
+                                 boolean tensor, BookmarkReader reader) {
         if (reader == null) {
             getTrainTestSize(sampleName + (postfix != null ? "_" + postfix : ""));
             reader = new BookmarkReader(TRAIN_SIZE, false);
@@ -779,7 +760,7 @@ public class Pipeline {
     // Item Recommendation
     // ------------------------------------------------------------------------------------------------------------------------------------
     private static void startBaselineCalculatorForResources(String sampleDir, String sampleName, int size,
-            boolean random, boolean writeTime) {
+                                                            boolean random, boolean writeTime) {
         BookmarkReader reader = null;
         String posfix = "";
         if (TOPIC_NAME != null) {
@@ -801,8 +782,8 @@ public class Pipeline {
     }
 
     private static void startResourceCIRTTCalculator(String sampleDir, String sampleName, String topicString, int size,
-            int neighborSize, Features features, boolean userSim, boolean bll, boolean novelty,
-            boolean calculateOnTag) {
+                                                     int neighborSize, Features features, boolean userSim, boolean bll, boolean novelty,
+                                                     boolean calculateOnTag) {
         BookmarkReader reader = null;
         String posfix = "";
         if (TOPIC_NAME != null) {
@@ -848,8 +829,8 @@ public class Pipeline {
     }
 
     private static void startCfResourceCalculator(String sampleDir, String sampleName, int size, int neighborSize,
-            boolean userBased, boolean resBased, boolean allResources, boolean bll, Features features,
-            boolean writeTime) {
+                                                  boolean userBased, boolean resBased, boolean allResources, boolean bll, Features features,
+                                                  boolean writeTime) {
         BookmarkReader reader = null;
         String posfix = "";
         if (TOPIC_NAME != null) {
@@ -877,7 +858,7 @@ public class Pipeline {
     }
 
     private static void startSustainApproach(String sampleDir, String sampleName, double r, double tau, double beta,
-            double learning_rate, int trainingRecency, int candidateNumber, int sampleSize, double cfWeight) {
+                                             double learning_rate, int trainingRecency, int candidateNumber, int sampleSize, double cfWeight) {
         BookmarkReader reader = null;
         getTrainTestSize(sampleName);
         SustainCalculator sustain = new SustainCalculator(sampleName, TRAIN_SIZE);
@@ -890,7 +871,7 @@ public class Pipeline {
     }
 
     private static void writeMetricsForResources(String sampleDir, String sampleName, String prefix, int sampleCount,
-            int k, String posfix, BookmarkReader reader, Integer trainSize) {
+                                                 int k, String posfix, BookmarkReader reader, Integer trainSize) {
         String topicString = ((posfix == null || posfix == "0") ? "_" : "_" + posfix + "_");
         for (int i = 1; i <= k; i++) {
             for (int j = 1; j <= sampleCount; j++) {
